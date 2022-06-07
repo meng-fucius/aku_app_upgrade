@@ -6,8 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:url_launcher/url_launcher_string.dart';
+import 'package:r_upgrade/r_upgrade.dart';
 
 enum ForceUpgrade {
   force(1),
@@ -77,100 +76,111 @@ class AppUpgrade {
   upgradeDialog(BuildContext context, PackageInfo packageInfo,
       Function()? onLaunchFail, AkuAppVersion akuAppVersion) {
     return Center(
-      child: Material(
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: 300,
-          height: 200,
-          decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              // gradient: LinearGradient(colors: [
-              //   Colors.yellow.withOpacity(0.05),
-              //   Colors.white,
-              // ], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-              color: Colors.white,
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.blue,
-                  blurRadius: 5,
-                  spreadRadius: 0,
-                )
-              ]),
-          child: Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(32),
-                child: Text(
-                  '当前不是最新版本\n请升级最新版',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold),
+      child: Container(
+        width: 300,
+        height: 200,
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.blue,
+              blurRadius: 5,
+              spreadRadius: 0,
+            )
+          ],
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Material(
+          child: Container(
+            decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0,0.7],
+                    colors: [
+                  Color(0x33FBE541),
+                  Colors.white,
+                ])),
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Text(
+                    '当前不是最新版本\n请升级最新版',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Container(
-                height: 1,
-                width: double.infinity,
-                color: Colors.black.withOpacity(0.45),
-              ),
-              SizedBox(
-                height: 50,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (akuAppVersion.forceEM != ForceUpgrade.force)
+                const Spacer(),
+                Container(
+                  height: 1,
+                  width: double.infinity,
+                  color: Colors.black.withOpacity(0.45),
+                ),
+                SizedBox(
+                  height: 50,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (akuAppVersion.forceEM != ForceUpgrade.force)
+                        Expanded(
+                          child: MaterialButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text(
+                              '取消',
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.normal),
+                            ),
+                          ),
+                        ),
+                      Offstage(
+                        offstage: akuAppVersion.forceEM == ForceUpgrade.force,
+                        child: Container(
+                          height: double.infinity,
+                          width: 1,
+                          color: Colors.black.withOpacity(0.45),
+                        ),
+                      ),
                       Expanded(
-                        child: TextButton(
-                          onPressed: () {
+                        child: MaterialButton(
+                          onPressed: () async {
                             Navigator.pop(context);
+                            if (Platform.isAndroid) {
+                              var stores = await RUpgrade.androidStores;
+                              if (stores == null || stores.isEmpty) {
+                                onLaunchFail?.call();
+                                return;
+                              }
+                              await RUpgrade.upgradeFromAndroidStore(
+                                  stores.first);
+                            } else if (Platform.isIOS) {
+                              await RUpgrade.upgradeFromAppStore(
+                                  packageInfo.packageName);
+                            } else {}
                           },
                           child: const Text(
-                            '取消',
+                            '去升级',
                             style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 20,
                                 fontWeight: FontWeight.normal),
                           ),
                         ),
-                      ),
-                    Offstage(
-                      offstage: akuAppVersion.forceEM == ForceUpgrade.force,
-                      child: Container(
-                        height: double.infinity,
-                        width: 1,
-                        color: Colors.black.withOpacity(0.45),
-                      ),
-                    ),
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () async {
-                          if (Platform.isAndroid) {
-                            var re = await launchUrlString(
-                                'mimarket://detail?id=${packageInfo.packageName}');
-                            if (!re && onLaunchFail != null) {
-                              onLaunchFail.call();
-                            }
-                          } else if (Platform.isIOS) {
-                            launchUrlString(
-                                'itms-apps://itunes.apple.com/app/${packageInfo.packageName}');
-                          } else {}
-                        },
-                        child: const Text(
-                          '去升级',
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.normal),
-                        ),
-                      ),
-                    )
-                  ],
+                      )
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -11,8 +11,8 @@ dependencies:
   flutter:
     sdk: flutter
   package_info_plus: ^1.4.2
-  url_launcher: ^6.1.2
   dio: ^4.0.6
+  r_upgrade: ^0.3.8+2
 
 dev_dependencies:
   flutter_test:
