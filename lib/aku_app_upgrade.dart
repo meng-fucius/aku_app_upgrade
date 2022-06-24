@@ -31,14 +31,17 @@ enum AndroidStoreName {
   taobao('淘宝手机助手', 'com.taobao.appcenter'),
   hiApk('安卓市场', 'com.hiapk.marketpho'),
   goApk('安智市场', 'cn.goapk.market'),
-  coolApk('酷安', 'com.coolapk.market');
+  coolApk('酷安', 'com.coolapk.market'),
+  empty('', '');
 
   final String name;
   final String packageName;
 
-  static AndroidStoreName getValue(String packageName) =>
-      AndroidStoreName.values
-          .firstWhere((element) => element.packageName == packageName);
+  static AndroidStoreName getValue(String packageName) {
+    return AndroidStoreName.values.firstWhere(
+        (element) => element.packageName == packageName,
+        orElse: () => AndroidStoreName.empty);
+  }
 
   AndroidStore get getAndroidStore => AndroidStore.internal(packageName);
 
@@ -181,44 +184,65 @@ class AppUpgrade {
                       Expanded(
                         child: MaterialButton(
                           onPressed: () async {
-                            Navigator.pop(context);
                             if (Platform.isAndroid) {
                               var stores = await RUpgrade.androidStores;
                               if (stores == null || stores.isEmpty) {
                                 onLaunchFail?.call();
                                 return;
                               }
+                              var storeEMs = <AndroidStoreName>[];
+                              for (var element in stores) {
+                                var re = AndroidStoreName.getValue(
+                                    element.packageName);
+                                if (re != AndroidStoreName.empty) {
+                                  storeEMs.add(re);
+                                }
+                              }
                               AndroidStoreName? selectStore;
-                              await showModalBottomSheet(
+                              selectStore = await showModalBottomSheet(
                                   isDismissible: false,
                                   context: context,
                                   builder: (context) {
-                                    return FittedBox(
-                                      child: ListView.separated(
-                                          itemBuilder: (context, index) {
-                                            var value =
-                                                AndroidStoreName.getValue(
-                                                    stores[index].packageName);
-                                            return GestureDetector(
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                                selectStore = value;
-                                              },
-                                              child: Center(
-                                                child: Text(value.name),
-                                              ),
-                                            );
-                                          },
-                                          separatorBuilder: (context, index) {
-                                            return const SizedBox(
-                                              height: 10,
-                                            );
-                                          },
-                                          itemCount: stores.length),
+                                    return Center(
+                                      child: Column(
+                                        children: [
+                                          const SizedBox(height: 20),
+                                          const Text('选择应用商店'),
+                                          Expanded(
+                                            child: ListView.separated(
+                                                itemBuilder: (context, index) {
+                                                  return GestureDetector(
+                                                    onTap: () {
+                                                      Navigator.pop(context,
+                                                          storeEMs[index]);
+                                                    },
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              32.0),
+                                                      child: Center(
+                                                        child: Text(
+                                                            storeEMs[index]
+                                                                .name),
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                separatorBuilder:
+                                                    (context, index) {
+                                                  return const SizedBox(
+                                                    height: 10,
+                                                  );
+                                                },
+                                                itemCount: storeEMs.length),
+                                          ),
+                                        ],
+                                      ),
                                     );
                                   });
-
-                              if (selectStore == null) return;
+                              await Future.delayed(Duration.zero, () async {
+                                if (selectStore == null) return;
+                              });
                               await RUpgrade.upgradeFromAndroidStore(
                                   selectStore!.getAndroidStore);
                             } else if (Platform.isIOS) {
