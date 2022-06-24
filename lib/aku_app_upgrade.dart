@@ -36,9 +36,14 @@ enum AndroidStoreName {
   final String name;
   final String packageName;
 
-  static AndroidStoreName getValue(String packageName) =>
-      AndroidStoreName.values
-          .firstWhere((element) => element.packageName == packageName);
+  static AndroidStoreName getValue(String packageName)  {
+    var re =AndroidStoreName.values
+        .firstWhere((element) => element.packageName == packageName,orElse: ()=>-1);
+    if(re=1)
+
+    return ;
+
+  }
 
   AndroidStore get getAndroidStore => AndroidStore.internal(packageName);
 
@@ -159,6 +164,7 @@ class AppUpgrade {
                         Expanded(
                           child: MaterialButton(
                             onPressed: () {
+
                               Navigator.pop(context);
                             },
                             child: const Text(
@@ -183,39 +189,49 @@ class AppUpgrade {
                           onPressed: () async {
                             Navigator.pop(context);
                             if (Platform.isAndroid) {
-                              var stores = await RUpgrade.androidStores;
+                              var stores = await RUpgrade.androidStores;///
+
                               if (stores == null || stores.isEmpty) {
                                 onLaunchFail?.call();
                                 return;
                               }
+                              print(stores);
                               AndroidStoreName? selectStore;
                               await showModalBottomSheet(
                                   isDismissible: false,
                                   context: context,
                                   builder: (context) {
-                                    return FittedBox(
-                                      child: ListView.separated(
-                                          itemBuilder: (context, index) {
-                                            var value =
-                                                AndroidStoreName.getValue(
-                                                    stores[index].packageName);
-                                            return GestureDetector(
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                                selectStore = value;
-                                              },
-                                              child: Center(
-                                                child: Text(value.name),
-                                              ),
-                                            );
-                                          },
-                                          separatorBuilder: (context, index) {
-                                            return const SizedBox(
-                                              height: 10,
-                                            );
-                                          },
-                                          itemCount: stores.length),
-                                    );
+
+                                 return  SizedBox(
+                                   height:450,
+                                        child: ListView.separated(
+                                            itemBuilder: (context, index) {
+                                              var value =
+                                              AndroidStoreName.getValue(
+                                                  stores[index].packageName);
+                                              print("这是${value}");
+                                              print("这是${ stores[index].packageName}");
+                                              return Container();
+                                              // return GestureDetector(
+                                              //   onTap: () {
+                                              //     Navigator.pop(context);
+                                              //     selectStore = value;
+                                              //   },
+                                              //   child: Center(
+                                              //     child: Text(value.name),
+                                              //   ),
+                                              // );
+                                            },
+                                            separatorBuilder: (context, index) {
+                                              return const SizedBox(
+                                                height: 10,
+                                              );
+                                            },
+                                            itemCount: stores.length),
+                                      )
+  ;
+
+
                                   });
 
                               if (selectStore == null) return;
