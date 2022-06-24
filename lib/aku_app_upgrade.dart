@@ -20,6 +20,31 @@ enum ForceUpgrade {
   const ForceUpgrade(this.typeNum);
 }
 
+enum AndroidStoreName {
+  googlePlay('谷歌商店', 'com.android.vending'),
+  tencent('应用宝', 'com.tencent.android.qqdownloader'),
+  qihoo('360手机助手', 'com.qihoo.appstore'),
+  baidu('百度手机助手', 'com.baidu.appsearch'),
+  xiaomi('小米应用商店', 'com.xiaomi.market'),
+  wandou('豌豆荚', 'com.wandoujia.phoenix2'),
+  huawei('华为应用市场', 'com.huawei.appmarket'),
+  taobao('淘宝手机助手', 'com.taobao.appcenter'),
+  hiApk('安卓市场', 'com.hiapk.marketpho'),
+  goApk('安智市场', 'cn.goapk.market'),
+  coolApk('酷安', 'com.coolapk.market');
+
+  final String name;
+  final String packageName;
+
+  static AndroidStoreName getValue(String packageName) =>
+      AndroidStoreName.values
+          .firstWhere((element) => element.packageName == packageName);
+
+  AndroidStore get getAndroidStore => AndroidStore.internal(packageName);
+
+  const AndroidStoreName(this.name, this.packageName);
+}
+
 class AppUpgrade {
   static final AppUpgrade _instance = AppUpgrade._();
 
@@ -97,7 +122,10 @@ class AppUpgrade {
                 gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    stops: [0,0.7],
+                    stops: [
+                  0,
+                  0.7
+                ],
                     colors: [
                   Color(0x33FBE541),
                   Colors.white,
@@ -160,8 +188,39 @@ class AppUpgrade {
                                 onLaunchFail?.call();
                                 return;
                               }
+                              AndroidStoreName? selectStore;
+                              await showModalBottomSheet(
+                                  isDismissible: false,
+                                  context: context,
+                                  builder: (context) {
+                                    return FittedBox(
+                                      child: ListView.separated(
+                                          itemBuilder: (context, index) {
+                                            var value =
+                                                AndroidStoreName.getValue(
+                                                    stores[index].packageName);
+                                            return GestureDetector(
+                                              onTap: () {
+                                                Navigator.pop(context);
+                                                selectStore = value;
+                                              },
+                                              child: Center(
+                                                child: Text(value.name),
+                                              ),
+                                            );
+                                          },
+                                          separatorBuilder: (context, index) {
+                                            return const SizedBox(
+                                              height: 10,
+                                            );
+                                          },
+                                          itemCount: stores.length),
+                                    );
+                                  });
+
+                              if (selectStore == null) return;
                               await RUpgrade.upgradeFromAndroidStore(
-                                  stores.first);
+                                  selectStore!.getAndroidStore);
                             } else if (Platform.isIOS) {
                               await RUpgrade.upgradeFromAppStore(
                                   packageInfo.packageName);
